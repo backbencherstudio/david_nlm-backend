@@ -14,27 +14,27 @@ export class SubcategoryController {
   constructor(private readonly subcategoryService: SubcategoryService) {}
 
   @Post()
-  create(@Body() createSubcategoryDto: CreateSubcategoryDto) {
+  async create(@Body() createSubcategoryDto: CreateSubcategoryDto) {
     return this.subcategoryService.create(createSubcategoryDto);
   }
 
   @Get()
-  findAll() {
+  async findAll() {
     return this.subcategoryService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.subcategoryService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    return this.subcategoryService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSubcategoryDto: UpdateSubcategoryDto) {
-    return this.subcategoryService.update(+id, updateSubcategoryDto);
+  async update(@Param('id') id: string, @Body() updateSubcategoryDto: UpdateSubcategoryDto) {
+    return this.subcategoryService.update(id, updateSubcategoryDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.subcategoryService.remove(+id);
+  async remove(@Param('id') id: string) {
+    return this.subcategoryService.remove(id);
   }
 }
