@@ -1,5 +1,4 @@
 generator client {
-  
   provider = "prisma-client"
   output   = "./generated"
 }
@@ -8,10 +7,11 @@ datasource db {
   provider = "postgresql"
 }
 
-
-/*------------------------------------------------------------
-                    --- Enum Start ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- Enum Start ---
+ * -------------------------------------------------------------
+ */
 
 enum UserType {
   ADMIN
@@ -48,11 +48,31 @@ enum OperatedBy {
   HYBRID
 }
 
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  FAILED
+}
 
-/*------------------------------------------------------------
-                    --- Enum End ---
--------------------------------------------------------------*/
+enum SubscriptionBillingCycle {
+  MONTHLY
+  YEARLY
+}
 
+enum SubscriptionPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+/**
+ * ------------------------------------------------------------
+ * --- Enum End ---
+ * -------------------------------------------------------------
+ */
 
 model Account {
   id         String   @id @default(cuid())
@@ -77,10 +97,11 @@ model Account {
   @@map("accounts")
 }
 
-
-/*------------------------------------------------------------
-                  --- user profile part start ---
--------------------------------------------------------------*/          
+/**
+ * ------------------------------------------------------------
+ * --- user profile part start ---
+ * -------------------------------------------------------------
+ */
 
 model User {
   id         String    @id @default(cuid())
@@ -89,22 +110,21 @@ model User {
   deleted_at DateTime?
   status     Int?      @default(1) @db.SmallInt
 
-  first_name String?   @db.VarChar(255)
-  last_name  String?   @db.VarChar(255)
-  name     String? @db.VarChar(255)
-  avatar     String?
-  location String? @db.VarChar(255)
-  phone_number  String?
-  email      String?   @unique
-  password   String?   @db.VarChar(255)
-  birthday   String?
- 
-  about_me   String?
-  address    String?
-  type       UserType? @default(CUSTOMER)
-  language String? @db.VarChar(100)
+  first_name   String? @db.VarChar(255)
+  last_name    String? @db.VarChar(255)
+  name         String? @db.VarChar(255)
+  avatar       String?
+  location     String? @db.VarChar(255)
+  phone_number String?
+  email        String? @unique
+  password     String? @db.VarChar(255)
+  birthday     String?
 
-  
+  about_me String?
+  address  String?
+  type     UserType? @default(CUSTOMER)
+  language String?   @db.VarChar(100)
+
   // billing info  
   billing_id        String?
   // stripe connect account 
@@ -113,6 +133,7 @@ model User {
   balance           Decimal?  @default(0.0) @db.Decimal(10, 2)
   // email verification
   email_verified_at DateTime?
+  // subscription 
 
   //----------------------------------------
   bio           String?   @db.Text
@@ -150,7 +171,6 @@ model User {
   @@map("users")
 }
 
-
 model VendorProfile {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -158,21 +178,22 @@ model VendorProfile {
   deleted_at DateTime?
 
   user_id String @unique
-  user    User @relation("UserToVendorProfile", fields: [user_id], references: [id], onDelete: Cascade)
+  user    User   @relation("UserToVendorProfile", fields: [user_id], references: [id], onDelete: Cascade)
 
+  subscription_active Boolean              @default(false)
   // license
-  license_photo   String[]
-  license_status  ADMIN_APPROVE_STATUS @default(PENDING)
-  approved_at     DateTime?
+  license_photo       String[]
+  license_status      ADMIN_APPROVE_STATUS @default(PENDING)
+  approved_at         DateTime?
 
   // business info
-  business_name String? @db.VarChar(255)
-  about_me      String? @db.Text
-  address       String?
+  business_name           String?                  @db.VarChar(255)
+  about_me                String?                  @db.Text
+  address                 String?
+  vendorSubscriptionPlans VendorSubscriptionPlan[]
 
   @@map("vendor_profiles")
 }
-
 
 model Ucode {
   id         String   @id @default(cuid())
@@ -191,86 +212,136 @@ model Ucode {
   @@map("ucodes")
 }
 
+/**
+ * ------------------------------------------------------------
+ * --- user profile part end ---
+ * -------------------------------------------------------------
+ */
+/**
+ * ------------------------------------------------------------
+ * --- Subscription part start ---
+ * -------------------------------------------------------------
+ */
 
-/*------------------------------------------------------------
-                  --- user profile part start ---
--------------------------------------------------------------*/
+model Subscriptionlist {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 
-/*------------------------------------------------------------
-                  --- service part start ---
--------------------------------------------------------------*/
+  name String
+
+  billing_cycle           SubscriptionBillingCycle?
+  status                  SubscriptionStatus?
+  vendorSubscriptionPlans VendorSubscriptionPlan[]
+
+  @@map("subscriptions")
+}
+
+model VendorSubscriptionPlan {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  vendor_id String
+  vendor    VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  subscription_id String
+  subscription    Subscriptionlist @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  start_date DateTime?
+  end_date   DateTime?
+
+  payment_status SubscriptionPaymentStatus?
+
+  @@map("vendor_subscriptions")
+}
+
+/**
+ * ------------------------------------------------------------
+ * --- Subscription part end---
+ * -------------------------------------------------------------
+ */
+
+/**
+ * ------------------------------------------------------------
+ * --- service part start ---
+ * -------------------------------------------------------------
+ */
 
 model Service {
-  id           String       @id @default(cuid())        
-  created_at   DateTime     @default(now())            
-  updated_at   DateTime     @updatedAt       
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  name         String       @db.VarChar(255)  
-  operated_by  OperatedBy?  
-  working_type WorkingType? 
+  name         String       @db.VarChar(255)
+  operated_by  OperatedBy?
+  working_type WorkingType?
 
   // Relationships  ক্যাটেগরি সম্পর্ক
-  category_id  String
-  category     ServiceCategory @relation("ServiceCategoryRelation", fields: [category_id], references: [id])  
+  category_id String
+  category    ServiceCategory @relation("ServiceCategoryRelation", fields: [category_id], references: [id])
 
   // Many-to-Many relationship with serviceToSubCategory
-  sub_categories ServiceToSubCategory[] @relation("ServiceWithManyToMany")   
+  sub_categories ServiceToSubCategory[] @relation("ServiceWithManyToMany")
 
-  @@map("services") 
+  @@map("services")
 }
 
 model ServiceCategory {
-  id             String               @id @default(cuid())       
-  name           String               @unique @db.VarChar(255)  
-  created_at     DateTime             @default(now())            
-  updated_at     DateTime             @updatedAt    
-  
-  // Relationships with  service
-  services       Service[]             @relation("ServiceCategoryRelation")    
-  // Many-to-Many relationship with sub-categories
-  sub_categories ServiceSubCategory[]  @relation("ServiceCategoryToSubCategory")  
+  id         String   @id @default(cuid())
+  name       String   @unique @db.VarChar(255)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  @@map("service_categories")  
+  // Relationships with  service
+  services       Service[]            @relation("ServiceCategoryRelation")
+  // Many-to-Many relationship with sub-categories
+  sub_categories ServiceSubCategory[] @relation("ServiceCategoryToSubCategory")
+
+  @@map("service_categories")
 }
 
 model ServiceSubCategory {
-  id          String   @id @default(cuid())  
-  created_at  DateTime @default(now())  
-  updated_at  DateTime @updatedAt      
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  name        String   @db.VarChar(255)      
-  
+  name String @db.VarChar(255)
+
   // Parent Category link
   category_id String
-  category    ServiceCategory @relation("ServiceCategoryToSubCategory", fields: [category_id], references: [id], onDelete: Cascade)  
+  category    ServiceCategory @relation("ServiceCategoryToSubCategory", fields: [category_id], references: [id], onDelete: Cascade)
 
   // Many-to-Many join table link
-  services    ServiceToSubCategory[]  @relation("Subcatagoryto-ServiceToSubCategory") 
+  services ServiceToSubCategory[] @relation("Subcatagoryto-ServiceToSubCategory")
 
-  @@unique([name, category_id])  
-  @@map("service_sub_categories")  
+  @@unique([name, category_id])
+  @@map("service_sub_categories")
 }
 
 // between Service and ServiceSubCategory
 model ServiceToSubCategory {
-  service_id      String  
-  sub_category_id String  
+  service_id      String
+  sub_category_id String
 
-  
-  service         Service            @relation("ServiceWithManyToMany", fields: [service_id], references: [id], onDelete: Cascade)  
-  sub_category    ServiceSubCategory @relation("Subcatagoryto-ServiceToSubCategory", fields: [sub_category_id], references: [id], onDelete: Cascade)  
+  service      Service            @relation("ServiceWithManyToMany", fields: [service_id], references: [id], onDelete: Cascade)
+  sub_category ServiceSubCategory @relation("Subcatagoryto-ServiceToSubCategory", fields: [sub_category_id], references: [id], onDelete: Cascade)
 
-  @@id([service_id, sub_category_id])  
-  @@map("service_to_sub_categories")  
+  @@id([service_id, sub_category_id])
+  @@map("service_to_sub_categories")
 }
 
-/*------------------------------------------------------------
-                  --- service part end ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- service part end ---
+ * -------------------------------------------------------------
+ */
 
-/*------------------------------------------------------------
-                 --- Chating Part Start ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- Chating Part Start ---
+ * -------------------------------------------------------------
+ */
 
 model Conversation {
   id           String        @id @default(cuid())
@@ -313,14 +384,17 @@ model Message {
   attachments String[] @db.Text
 }
 
-/*------------------------------------------------------------
-                 --- Chating Part End ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- Chating Part End ---
+ * -------------------------------------------------------------
+ */
 
-/*------------------------------------------------------------
-                --- Notification Part Start ---
--------------------------------------------------------------*/
-
+/**
+ * ------------------------------------------------------------
+ * --- Notification Part Start ---
+ * -------------------------------------------------------------
+ */
 
 model NotificationEvent {
   id            String         @id @default(uuid())
@@ -353,12 +427,16 @@ model Notification {
   entity_id String?
 }
 
-/*------------------------------------------------------------
-                 --- Notification Part End ---
--------------------------------------------------------------*/
-/*------------------------------------------------------------
-             --- Role and Permission Schema start ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- Notification Part End ---
+ * -------------------------------------------------------------
+ */
+/**
+ * ------------------------------------------------------------
+ * --- Role and Permission Schema start ---
+ * -------------------------------------------------------------
+ */
 
 model Role {
   id         String    @id @default(cuid())
@@ -424,13 +502,17 @@ model RoleUser {
   @@map("role_users")
 }
 
-/*------------------------------------------------------------
-             --- Role and Permission Schema end ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- Role and Permission Schema end ---
+ * -------------------------------------------------------------
+ */
 
-/*------------------------------------------------------------
-             --- Payment Schema start ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- Payment Schema start ---
+ * -------------------------------------------------------------
+ */
 
 model UserPaymentMethod {
   id         String    @id @default(cuid())
@@ -474,13 +556,11 @@ model PaymentTransaction {
 }
 
 /*------------------------------------------------------------
-             --- Payment Schema end ---
+                 --- Payment Schema end ---
 -------------------------------------------------------------*/
-
 /*------------------------------------------------------------
-             --- Others Schema start ---
+                 --- Others Schema start ---
 -------------------------------------------------------------*/
-
 
 model Faq {
   id         String    @id @default(cuid())
@@ -512,5 +592,5 @@ model Contact {
 }
 
 /*------------------------------------------------------------
-             --- Others Schema end ---
+                 --- Others Schema end ---
 -------------------------------------------------------------*/
