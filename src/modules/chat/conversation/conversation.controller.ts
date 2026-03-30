@@ -15,8 +15,9 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Role } from '../../../common/guard/role/role.enum';
 import { Roles } from '../../../common/guard/role/roles.decorator';
+import { ApiExcludeController } from '@nestjs/swagger';
 
-@ApiBearerAuth()
+
 @ApiTags('Conversation')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('chat/conversation')

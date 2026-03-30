@@ -3,9 +3,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as express from 'express';
 import helmet from 'helmet';
-import { join, resolve } from 'path';
+import { join } from 'path';
 // internal imports
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
@@ -69,10 +68,42 @@ async function bootstrap() {
     .setDescription(`${process.env.APP_NAME} api docs`)
     .setVersion('1.0')
     .addTag(`${process.env.APP_NAME}`)
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Admin access token (UserType: ADMIN)',
+      },
+      'admin-token',
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Customer access token (UserType: CUSTOMER)',
+      },
+      'customer-token',
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Vendor access token (UserType: VENDOR)',
+      },
+      'vendor-token',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    useGlobalPrefix: true,
+    jsonDocumentUrl: 'docs-json',
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
  
 
   await app.listen(process.env.PORT ?? 4000, '0.0.0.0');

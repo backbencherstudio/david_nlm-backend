@@ -4,21 +4,15 @@ import {
   ExceptionFilter,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  PrismaClientKnownRequestError,
-  PrismaClientUnknownRequestError,
-  PrismaClientValidationError,
-  PrismaClientInitializationError,
-  PrismaClientRustPanicError,
-} from '@prisma/client/runtime/library';
+import { Prisma } from 'prisma/generated/client';
 import { Response } from 'express';
 
 @Catch(
-  PrismaClientKnownRequestError,
-  PrismaClientUnknownRequestError,
-  PrismaClientValidationError,
-  PrismaClientInitializationError,
-  PrismaClientRustPanicError,
+  Prisma.PrismaClientKnownRequestError,
+  Prisma.PrismaClientUnknownRequestError,
+  Prisma.PrismaClientValidationError,
+  Prisma.PrismaClientInitializationError,
+  Prisma.PrismaClientRustPanicError,
 )
 export class PrismaExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
@@ -29,7 +23,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'An unexpected error occurred while accessing the database.';
 
-    if (exception instanceof PrismaClientKnownRequestError) {
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       switch (exception.code) {
         case 'P2000':
           status = HttpStatus.BAD_REQUEST;
@@ -98,17 +92,17 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         default:
           message = 'A database error occurred.';
       }
-    } else if (exception instanceof PrismaClientValidationError) {
+    } else if (exception instanceof Prisma.PrismaClientValidationError) {
       status = HttpStatus.BAD_REQUEST;
       message = 'Invalid data provided for a Prisma operation.';
-    } else if (exception instanceof PrismaClientUnknownRequestError) {
+    } else if (exception instanceof Prisma.PrismaClientUnknownRequestError) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'An unknown database error occurred.';
-    } else if (exception instanceof PrismaClientInitializationError) {
+    } else if (exception instanceof Prisma.PrismaClientInitializationError) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message =
         'Failed to initialize Prisma Client. Check database connection settings.';
-    } else if (exception instanceof PrismaClientRustPanicError) {
+    } else if (exception instanceof Prisma.PrismaClientRustPanicError) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message =
         'Prisma engine panicked. Try restarting the server or check Prisma setup.';

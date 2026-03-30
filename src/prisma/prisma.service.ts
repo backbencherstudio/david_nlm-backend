@@ -4,6 +4,7 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
+import { PrismaPg } from '@prisma/adapter-pg';
 import appConfig from '../config/app.config';
 import { PrismaClient } from 'prisma/generated/client';
 
@@ -21,8 +22,10 @@ export class PrismaService
       throw new Error('DATABASE_URL is not defined in environment variables');
     }
 
+    const adapter = new PrismaPg({ connectionString: datasourceUrl });
+
     super({
-      datasourceUrl,
+      adapter,
     });
 
     if (process.env.PRISMA_ENV == '1') {

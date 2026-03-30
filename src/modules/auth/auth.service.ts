@@ -77,15 +77,27 @@ export class AuthService {
   }
   // done
   async register({
+    first_name,
+    last_name,
     name,
+    address,
+    phone,
+    business_name,
     email,
     password,
     type,
+    image,
   }: {
+    first_name: string;
+    last_name: string;
     name: string;
+    address?: string;
     email: string;
+    phone?: string;
+    business_name?: string;
     password: string;
     type?: string;
+    image?: Express.Multer.File;
   }) {
     try {
       // Check if email already exist
@@ -102,22 +114,30 @@ export class AuthService {
       }
 
       const user = await this.userRepository.createUser({
+        first_name: first_name,
+        last_name: last_name,
         name: name,
         email: email,
+        address: address,
+        phone: phone,
+        business_name: business_name,
         password: password,
+        image: image,
         type: type,
       });
 
-      if (user == null && user.success == false) {
+      if (!user || user.success === false || !user.data?.id) {
         return {
           success: false,
-          message: 'Failed to create account',
+          message: user?.message || 'Failed to create account',
         };
       }
 
+      const userId = user.data.id;
+
       // create stripe customer account
       const stripeCustomer = await StripePayment.createCustomer({
-        user_id: user.data.id,
+        user_id: userId,
         email: email,
         name: name,
       });
@@ -125,7 +145,7 @@ export class AuthService {
       if (stripeCustomer) {
         await this.prisma.user.update({
           where: {
-            id: user.data.id,
+            id: userId,
           },
           data: {
             billing_id: stripeCustomer.id,
@@ -136,7 +156,7 @@ export class AuthService {
       // ----------------------------------------------------
       // create otp code
       const token = await this.ucodeRepository.createToken({
-        userId: user.data.id,
+        userId: userId,
         isOtp: true,
         time: 2,
       });
@@ -194,6 +214,93 @@ export class AuthService {
         message: error.message,
       };
     }
+  }
+
+  // add license (multiple images)
+  async addLicense(
+    userId: string,
+    license: Express.Multer.File[],
+  ) {
+    const data: any = {};
+
+    if (license && license.length > 0) {
+      // delete old license images if exist
+      const existingProfile = await this.prisma.vendorProfile.findUnique({
+        where: { user_id: userId },
+        select: { license_photo: true },
+      });
+
+      if (existingProfile?.license_photo?.length) {
+        for (const oldPhoto of existingProfile.license_photo) {
+          await TanvirStorage.delete(
+            appConfig().storageUrl.license + '/' + oldPhoto,
+          );
+        }
+      }
+
+      // upload new license images
+      const fileNames: string[] = [];
+      for (const file of license) {
+        const fileName = `${StringHelper.randomString()}_${file.originalname}`;
+        await TanvirStorage.put(
+          appConfig().storageUrl.license + '/' + fileName,
+          file.buffer,
+        );
+        fileNames.push(fileName);
+      }
+      // VendorProfile.license_photo is a String[] in Prisma schema
+      data.license_photo = fileNames;
+    }
+
+    const updatedVendorProfile = await this.prisma.vendorProfile.upsert({
+      where: { user_id: userId },
+      create: {
+        user_id: userId,
+        license_photo: data.license_photo || [],
+      },
+      update: {
+        ...data,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+            address: true,
+            type: true,
+          },
+        },
+      },
+    });
+
+    const user = updatedVendorProfile.user;
+    
+    return {
+      success: true,
+      message: 'License added successfully',
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar
+          ? TanvirStorage.url(
+              appConfig().storageUrl.avatar + '/' + user.avatar,
+            )
+          : null,
+        address: user.address,
+        type: user.type,
+        license_photo: updatedVendorProfile.license_photo
+          ? updatedVendorProfile.license_photo.map((photo) =>
+              TanvirStorage.url(
+                appConfig().storageUrl.license + '/' + photo,
+              ),
+            )
+          : [],
+      },
+    };
+
   }
 
   // update user 

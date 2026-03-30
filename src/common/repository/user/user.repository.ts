@@ -5,8 +5,9 @@ import * as QRCode from 'qrcode';
 import * as speakeasy from 'speakeasy';
 import appConfig from '../../../config/app.config';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Role } from '../../guard/role/role.enum';
 import { ArrayHelper } from '../../helper/array.helper';
+import { TanvirStorage } from 'src/common/lib/Disk/TanvirStorage';
+import { StringHelper } from 'src/common/helper/string.helper';
 
 @Injectable()
 export class UserRepository {
@@ -34,8 +35,6 @@ export class UserRepository {
     });
     return user;
   }
-
- 
 
   /**
    * get user details
@@ -182,86 +181,129 @@ export class UserRepository {
    * @returns
    */
   async createUser({
+    first_name,
+    last_name,
     name,
+    address,
+    phone,
+    business_name,
     email,
     password,
+    image,
     type,
     role_id,
   }: {
+    first_name?: string;
+    last_name?: string;
     name?: string;
+    address?: string;
+    phone?: string;
+    business_name?: string;
     email: string;
     password: string;
+    image?: Express.Multer.File;
     type?: string;
     role_id?: string;
   }) {
     try {
-      const data = {};
+      // -------------------------
+      // Step 1: Prepare basic user data
+      // -------------------------
+      const data: any = {};
 
-      if (name) {
-        data['name'] = name;
+      if (first_name) data.first_name = first_name;
+      if (last_name) data.last_name = last_name;
+      if (name) data.name = name;
+      if (address) data.location = address;
+      if (phone) data.phone_number = phone;
+
+      // -------------------------
+      // Step 2: Upload avatar if provided
+      // -------------------------
+      if (image) {
+        const fileName = `${StringHelper.randomString()}_${image.originalname}`;
+        await TanvirStorage.put(
+          appConfig().storageUrl.avatar + '/' + fileName,
+          image.buffer,
+        );
+        data.avatar = fileName;
       }
 
+      // -------------------------
+      // Step 3: Check email uniqueness
+      // -------------------------
       if (email) {
         const userEmailExist = await this.exist({
           field: 'email',
           value: String(email),
         });
-
         if (userEmailExist) {
-          return {
-            success: false,
-            message: 'Email already exist',
-          };
+          return { success: false, message: 'Email already exists' };
         }
-
-        data['email'] = email;
+        data.email = email;
       }
 
+      // -------------------------
+      // Step 4: Hash password
+      // -------------------------
       if (password) {
-        data['password'] = await bcrypt.hash(
-          password,
-          appConfig().security.salt,
-        );
+        data.password = await bcrypt.hash(password, appConfig().security.salt);
       }
 
-      if (type && ArrayHelper.inArray(type, Object.values(Role))) {
-        data['type'] = type;
+      // -------------------------
+      // Step 5: Validate user type
+      // -------------------------
+      if (type && ArrayHelper.inArray(type, Object.values(UserType))) {
+        data.type = type as UserType;
+      } else if (type) {
+        return { success: false, message: 'Invalid user type' };
       }
 
+      // -------------------------
+      // Step 6: Prepare VendorProfile if user is VENDOR
+      // -------------------------
+      const createData: any = { ...data };
+      if (data.type === UserType.VENDOR) {
+        const vendorprofile: any = {};
+        if (business_name) vendorprofile.business_name = business_name;
+
+        createData.vendorProfile = {
+          create: {
+            ...vendorprofile,
+            license_status: 'PENDING', // default
+          },
+        };
+      }
+
+      // -------------------------
+      // Step 7: Create user with Prisma
+      // -------------------------
       const user = await this.prisma.user.create({
-        data: {
-          ...data,
+        data: createData,
+        include: {
+          vendorProfile: true,
         },
       });
 
-      if (user) {
-        if (role_id) {
-          // attach role
-          await this.attachRole({
-            user_id: user.id,
-            role_id: role_id,
-          });
-        }
-
-        return {
-          success: true,
-          message: 'User created successfully',
-          data: user,
-        };
-      } else {
-        return {
-          success: false,
-          message: 'User creation failed',
-        };
+      // -------------------------
+      // Step 8: Attach role if provided
+      // -------------------------
+      if (user && role_id) {
+        await this.attachRole({ user_id: user.id, role_id });
       }
-    } catch (error) {
+
+      // -------------------------
+      // Step 9: Return response
+      // -------------------------
       return {
-        success: false,
-        message: error.message,
+        success: true,
+        message: 'User created successfully',
+        data: user,
       };
+    } catch (error) {
+      return { success: false, message: error.message };
     }
   }
-
   /**
    * create user under a tenant
    * @param param0
@@ -274,7 +316,7 @@ export class UserRepository {
       email,
       password,
       role_id = null,
-      type = 'user',
+      type,
     }: {
       name?: string;
       email?: string;
@@ -310,9 +352,9 @@ export class UserRepository {
         );
       }
 
-      if (ArrayHelper.inArray(type, Object.values(Role))) {
-        data['type'] = type;
-      } else {
+      if (type && ArrayHelper.inArray(type, Object.values(UserType))) {
+        data['type'] = type as UserType;
+      } else if (type) {
         return {
           success: false,
           message: 'Invalid user type',
