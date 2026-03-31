@@ -273,9 +273,10 @@ model Service {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  name         String       @db.VarChar(255)
-  operated_by  OperatedBy?
-  working_type WorkingType?
+  name         String      @db.VarChar(255)
+  operated_by  OperatedBy
+  working_type WorkingType
+  commission   Decimal     @default(0.0) @db.Decimal(5, 2)
 
   // Relationships  ক্যাটেগরি সম্পর্ক
   category_id String
@@ -555,12 +556,16 @@ model PaymentTransaction {
   @@map("payment_transactions")
 }
 
-/*------------------------------------------------------------
-                 --- Payment Schema end ---
--------------------------------------------------------------*/
-/*------------------------------------------------------------
-                 --- Others Schema start ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- Payment Schema end ---
+ * -------------------------------------------------------------
+ */
+/**
+ * ------------------------------------------------------------
+ * --- Others Schema start ---
+ * -------------------------------------------------------------
+ */
 
 model Faq {
   id         String    @id @default(cuid())
@@ -591,6 +596,8 @@ model Contact {
   @@map("contacts")
 }
 
-/*------------------------------------------------------------
-                 --- Others Schema end ---
--------------------------------------------------------------*/
+/**
+ * ------------------------------------------------------------
+ * --- Others Schema end ---
+ * -------------------------------------------------------------
+ */
