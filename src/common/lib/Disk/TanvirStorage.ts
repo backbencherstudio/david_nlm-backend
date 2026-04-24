@@ -96,7 +96,7 @@ export class TanvirStorage {
 
     let driverAdapter: IStorage;
     switch (driver) {
-      // for local filesystem
+  
       case 'local':
         driverAdapter = new LocalAdapter(config);
         break;

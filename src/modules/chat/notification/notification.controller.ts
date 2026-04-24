@@ -6,19 +6,19 @@ import { ApiExcludeController } from '@nestjs/swagger';
 
 @ApiExcludeController()
 @Controller('notification')
-@UseGuards(JwtAuthGuard) // Ensures that only authenticated users can access these endpoints
+@UseGuards(JwtAuthGuard) 
 export class NotificationController {
 
   constructor(private readonly notificationService: NotificationService) {}
 
-  // Get all notifications for the authenticated user
+  
   @Get('user-notification')
   async getAllUserNotifications(@Req() req: Request) {
     const userId = req.user.userId; 
     return this.notificationService.findAllNotificationsForUser(userId);
   }
 
-  // delete notification by id for the authenticated user
+ 
   @Patch('delete-notification/:id')
   async deleteUserNotification(
     @Req() req: Request, 

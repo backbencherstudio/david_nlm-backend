@@ -50,17 +50,11 @@ export class ListingController {
     return this.listingService.remove(id);
   }
 
-  /*-----------------------------------------
-          dashborad service management
-  -----------------------------------------*/
-
-  // all service dashboard
   @Get('dashboard/all-service')
   async getAllServiceDashboard() {
     return this.listingService.getAllServiceDashboard();
   }
 
-  // action dashboard service status update
   @Patch('dashboard/status/:id')
   async updateServiceStatus(
     @Param('id') id: string,

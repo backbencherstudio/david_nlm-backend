@@ -177,11 +177,6 @@ export class ListingService {
     };
   }
 
-  /*-----------------------------------------
-          dashborad service management
-  -----------------------------------------*/
-
-  // all service dashboard
   async getAllServiceDashboard() {
     const services = await this.prisma.service.findMany({
       select: {
@@ -217,7 +212,6 @@ export class ListingService {
     };
   }
 
-  // action dashboard service status update
   async updateServiceStatus(id: string, status: number) {
     const service = await this.prisma.service.findUnique({
       where: { id },

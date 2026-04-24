@@ -16,11 +16,7 @@ const STRIPE_WEBHOOK_SECRET = appConfig().payment.stripe.webhook_secret;
 export class StripePayment {
 
 
-  /*-----------------------------------------
-            important Schema start
-  -----------------------------------------*/
-
-  // create payment method
+ 
   static async createPaymentMethod({
     card,
     billing_details,
@@ -40,7 +36,7 @@ export class StripePayment {
     return paymentMethod;
   }
 
-  // create payment intent
+
   static async createPaymentIntent({
     amount,
     currency,
@@ -60,7 +56,7 @@ export class StripePayment {
     });
   }
 
-  // create customer
+  
   static async createCustomer({
     user_id,
     name,

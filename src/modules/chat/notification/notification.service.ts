@@ -6,7 +6,7 @@ export class NotificationService {
 
   constructor(private prisma: PrismaService) {}
 
-  // Get all notifications for the authenticated user
+
   async findAllNotificationsForUser(userId: string) {
     const notifications = await this.prisma.notification.findMany({
       where: { receiver_id: userId },
@@ -20,7 +20,7 @@ export class NotificationService {
     }
   }
 
-  // Delete notification by id for the authenticated user
+ 
   async deleteNotificationForUser(
     notificationId: string, 
     userId: string

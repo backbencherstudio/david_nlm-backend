@@ -7,12 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-/**
- * ------------------------------------------------------------
- * --- Enum Start ---
- * -------------------------------------------------------------
- */
-
 enum UserType {
   ADMIN
   CUSTOMER
@@ -68,11 +62,6 @@ enum SubscriptionPaymentStatus {
   REFUNDED
 }
 
-/**
- * ------------------------------------------------------------
- * --- Enum End ---
- * -------------------------------------------------------------
- */
 
 model Account {
   id         String   @id @default(cuid())
@@ -97,12 +86,6 @@ model Account {
   @@map("accounts")
 }
 
-/**
- * ------------------------------------------------------------
- * --- user profile part start ---
- * -------------------------------------------------------------
- */
-
 model User {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -125,17 +108,11 @@ model User {
   type     UserType? @default(CUSTOMER)
   language String?   @db.VarChar(100)
 
-  // billing info  
   billing_id        String?
-  // stripe connect account 
   stripe_connect_id String?
-  //user balance
   balance           Decimal?  @default(0.0) @db.Decimal(10, 2)
-  // email verification
   email_verified_at DateTime?
-  // subscription 
 
-  //----------------------------------------
   bio           String?   @db.Text
   domain        String?   @unique
   username      String?   @unique
@@ -152,24 +129,13 @@ model User {
   two_factor_secret     String?
   accounts              Account[]
 
-  // --- Vendor Profile ---
   vendorProfile VendorProfile? @relation("UserToVendorProfile")
-
-  // --- Conversation & Messaging ---
   participants Participant[] @relation("participantUser")
   sentMessages Message[]     @relation("messageSender")
-
-  // --- Business ---
   businesses Business[] @relation("BusinessToUser")
-
-  // --- Notifications ---
   receivedNotifications Notification[] @relation("notificationReceiver")
   sentNotifications     Notification[] @relation("notificationSender")
-
-  
   bookings              Booking[] @relation("BookingToUser")
-   
-
   user_payment_methods UserPaymentMethod[]
   ucodes               Ucode[]
   role_users           RoleUser[]
@@ -188,12 +154,10 @@ model VendorProfile {
   user    User   @relation("UserToVendorProfile", fields: [user_id], references: [id], onDelete: Cascade)
 
   subscription_active Boolean              @default(false)
-  // license
+  
   license_photo       String[]
   license_status      ADMIN_APPROVE_STATUS @default(PENDING)
   approved_at         DateTime?
-
-  // business info
   business_name           String?                  @db.VarChar(255)
   about_me                String?                  @db.Text
   address                 String?
@@ -219,16 +183,6 @@ model Ucode {
   @@map("ucodes")
 }
 
-/**
- * ------------------------------------------------------------
- * --- user profile part end ---
- * -------------------------------------------------------------
- */
-/**
- * ------------------------------------------------------------
- * --- Subscription part start ---
- * -------------------------------------------------------------
- */
 
 model Subscriptionlist {
   id         String   @id @default(cuid())
@@ -263,12 +217,6 @@ model VendorSubscriptionPlan {
   @@map("vendor_subscriptions")
 }
 
-/**
- * ------------------------------------------------------------
- * --- Subscription part end---
- * -------------------------------------------------------------
- */
-
 enum BusinessOperatedBy {
   HOME_BASED
   LOCATION_BASED
@@ -281,13 +229,11 @@ model Business {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  // Create Business Screen Data
   business_name        String? @db.VarChar(255)
   business_cover_photo String? @db.VarChar(255)
   business_description String? @db.VarChar(255)
   business_note        String? @db.Text
 
-  // Category & Sub-category link
   category_id     String?
   category        ServiceCategory?    @relation("BusinessToCategory", fields: [category_id], references: [id])
   sub_category_id String?
@@ -295,8 +241,6 @@ model Business {
   user_id         String
   owner            User @relation("BusinessToUser",fields: [user_id], references: [id], onDelete: Cascade)  
 
- 
-  // Operated Service
   OPERATED_BY BusinessOperatedBy?
 
   specialties  String? @db.VarChar(255)
@@ -304,11 +248,8 @@ model Business {
 
   portfolio_files String[] @db.Text
 
-  // Relationships
   packages Package[] @relation("BusinessToPackage")
   days     Day[]     @relation("BusinessToDay")
-
-  // bookings
   bookings Booking[] @relation("BookingToBusiness")
 
   @@map("businesses")
@@ -327,11 +268,8 @@ model Package {
   notes         String?  @db.Text
   service_price Decimal? @default(0.0) @db.Decimal(10, 2)
 
-  // service link
   business_id String
   business    Business @relation("BusinessToPackage", fields: [business_id], references: [id], onDelete: Cascade)
-
-    // bookings
   bookings Booking[] @relation("BookingToService")
 
   @@map("packages")
@@ -344,32 +282,18 @@ model Day {
 
   day_name String? @db.VarChar(50)
 
-  // working time
   start_time String? @db.VarChar(10)
   end_time   String? @db.VarChar(10)
 
   intra_service_interval_hours   Int? @default(0)
   intra_service_interval_minutes Int? @default(0)
 
-  // business link
   business_id String
   business    Business @relation("BusinessToDay", fields: [business_id], references: [id], onDelete: Cascade)
 
   @@map("days")
 }
 
-/**
- * ------------------------------------------------------------
- * --- Business part End ---
- * -------------------------------------------------------------
- */
-/**
- * ------------------------------------------------------------
- * --- Booking part start ---
- * -------------------------------------------------------------
- */
-
- 
  enum BookingStatus {
   PENDING
   CONFIRMED
@@ -392,8 +316,6 @@ model Day {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  // booking details
-
   booking_date DateTime?
   booking_start_time String? @db.VarChar(10)
   booking_end_time   String? @db.VarChar(10)
@@ -405,7 +327,6 @@ model Day {
 
   payment_status PaymentStatus?
   
-  // relationships
   user_id     String
   user        User     @relation("BookingToUser", fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -415,18 +336,8 @@ model Day {
   service_id String
   service    Package  @relation("BookingToService", fields: [service_id], references: [id], onDelete: Cascade)
 
- 
  }
-/**
- * ------------------------------------------------------------
- * --- Booking part End ---
- * -------------------------------------------------------------
- */
-/**
- * ------------------------------------------------------------
- * --- service part start ---
- * -------------------------------------------------------------
- */
+
 
 model Service {
   id         String   @id @default(cuid())
@@ -439,15 +350,10 @@ model Service {
   working_type WorkingType
   commission   Decimal     @default(0.0) @db.Decimal(5, 2)
 
-  // Relationships  
   category_id String
   category    ServiceCategory @relation("ServiceCategoryRelation", fields: [category_id], references: [id])
 
-  // Many-to-Many relationship with serviceToSubCategory
   sub_categories ServiceToSubCategory[] @relation("ServiceWithManyToMany")
-
-  // Relationship with business
-
   @@map("services")
 }
 
@@ -457,12 +363,8 @@ model ServiceCategory {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  // Relationships with  service
   services       Service[]            @relation("ServiceCategoryRelation")
-  // Many-to-Many relationship with sub-categories
   sub_categories ServiceSubCategory[] @relation("ServiceCategoryToSubCategory")
-
-  // Relationship with business
   businesses Business[] @relation("BusinessToCategory")
 
   @@map("service_categories")
@@ -474,22 +376,16 @@ model ServiceSubCategory {
   updated_at DateTime @updatedAt
 
   name String @db.VarChar(255)
-
-  // Parent Category link
   category_id String
   category    ServiceCategory @relation("ServiceCategoryToSubCategory", fields: [category_id], references: [id], onDelete: Cascade)
 
-  // Many-to-Many join table link
   services ServiceToSubCategory[] @relation("Subcatagoryto-ServiceToSubCategory")
-
-  // Relationship with business
   businesses Business[] @relation("BusinessToSubCategory")
 
   @@unique([name, category_id])
   @@map("service_sub_categories")
 }
 
-// between Service and ServiceSubCategory
 model ServiceToSubCategory {
   service_id      String
   sub_category_id String
@@ -501,17 +397,6 @@ model ServiceToSubCategory {
   @@map("service_to_sub_categories")
 }
 
-/**
- * ------------------------------------------------------------
- * --- service part end ---
- * -------------------------------------------------------------
- */
-
-/**
- * ------------------------------------------------------------
- * --- Chating Part Start ---
- * -------------------------------------------------------------
- */
 
 model Conversation {
   id           String        @id @default(cuid())
@@ -554,18 +439,6 @@ model Message {
   attachments String[] @db.Text
 }
 
-/**
- * ------------------------------------------------------------
- * --- Chating Part End ---
- * -------------------------------------------------------------
- */
-
-/**
- * ------------------------------------------------------------
- * --- Notification Part Start ---
- * -------------------------------------------------------------
- */
-
 model NotificationEvent {
   id            String         @id @default(uuid())
   created_at    DateTime       @default(now())
@@ -596,17 +469,6 @@ model Notification {
 
   entity_id String?
 }
-
-/**
- * ------------------------------------------------------------
- * --- Notification Part End ---
- * -------------------------------------------------------------
- */
-/**
- * ------------------------------------------------------------
- * --- Role and Permission Schema start ---
- * -------------------------------------------------------------
- */
 
 model Role {
   id         String    @id @default(cuid())
@@ -672,17 +534,6 @@ model RoleUser {
   @@map("role_users")
 }
 
-/**
- * ------------------------------------------------------------
- * --- Role and Permission Schema end ---
- * -------------------------------------------------------------
- */
-
-/**
- * ------------------------------------------------------------
- * --- Payment Schema start ---
- * -------------------------------------------------------------
- */
 
 model UserPaymentMethod {
   id         String    @id @default(cuid())
@@ -725,17 +576,6 @@ model PaymentTransaction {
   @@map("payment_transactions")
 }
 
-/**
- * ------------------------------------------------------------
- * --- Payment Schema end ---
- * -------------------------------------------------------------
- */
-/**
- * ------------------------------------------------------------
- * --- Others Schema start ---
- * -------------------------------------------------------------
- */
-
 model Faq {
   id         String    @id @default(cuid())
   created_at DateTime  @default(now())
@@ -765,8 +605,3 @@ model Contact {
   @@map("contacts")
 }
 
-/**
- * ------------------------------------------------------------
- * --- Others Schema end ---
- * -------------------------------------------------------------
- */

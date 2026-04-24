@@ -13,7 +13,7 @@ export class DepositeController {
 
   constructor(private readonly depositeService: DepositeService) {}
 
-  // add deposite
+ 
   @Post('add-balance')
   create(
     @Body() createDepositDto: CreateDepositDto,

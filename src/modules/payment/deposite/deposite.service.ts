@@ -12,7 +12,6 @@ export class DepositeService {
    ) {}
 
 
-   // add deposite
     async create(
       createDepositDto: CreateDepositDto,
       userId: string

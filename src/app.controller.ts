@@ -31,20 +31,20 @@ export class AppController {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
     res.setHeader('Cache-Control', 'no-cache');
-    res.flushHeaders(); // make sure headers are sent immediately
+    res.flushHeaders(); 
 
     const stream = new Readable({
       read() {},
     });
 
-    // Pipe the stream to the response
+   
     stream.pipe(res);
 
     let counter = 0;
     const interval = setInterval(() => {
       if (counter >= 10) {
         stream.push('Stream complete.\n');
-        stream.push(null); // ends the stream
+        stream.push(null); 
         clearInterval(interval);
       } else {
         stream.push(`Chunk ${counter + 1} at ${new Date().toISOString()}\n`);

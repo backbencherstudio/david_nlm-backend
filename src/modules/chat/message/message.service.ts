@@ -2,17 +2,16 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
-} from "@nestjs/common";
-import appConfig from "../../../config/app.config";
-import { CreateMessageDto } from "./dto/create-message.dto";
-import { PrismaService } from "../../../prisma/prisma.service";
+} from '@nestjs/common';
+import appConfig from '../../../config/app.config';
+import { CreateMessageDto } from './dto/create-message.dto';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { TanvirStorage } from '../../../common/lib/Disk/TanvirStorage';
-import { MessageGateway } from "./message.gateway";
-import { StringHelper } from "src/common/helper/string.helper";
-import { paginateResponse, PaginationDto } from "src/common/pagination";
-import { ChatRepository } from "../../../common/repository/chat/chat.repository";
+import { MessageGateway } from './message.gateway';
+import { StringHelper } from 'src/common/helper/string.helper';
+import { paginateResponse, PaginationDto } from 'src/common/pagination';
+import { ChatRepository } from '../../../common/repository/chat/chat.repository';
 
-// Temporary enum until Prisma generates it
 enum MessageStatus {
   SENT = 'SENT',
   DELIVERED = 'DELIVERED',
@@ -25,9 +24,8 @@ export class MessageService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly messageGateway: MessageGateway,
-  ) { }
+  ) {}
 
-  // *Send message (with Prisma transaction)
   async create(
     createMessageDto: CreateMessageDto,
     sender: string,
@@ -41,7 +39,7 @@ export class MessageService {
 
     if (!participant) {
       throw new UnauthorizedException(
-        "You are not a participant of this conversation.",
+        'You are not a participant of this conversation.',
       );
     }
 
@@ -51,7 +49,7 @@ export class MessageService {
     });
 
     if (!conversation) {
-      throw new NotFoundException("Conversation not found");
+      throw new NotFoundException('Conversation not found');
     }
 
     const savedFileNames: string[] = [];
@@ -60,7 +58,7 @@ export class MessageService {
       for (const file of files) {
         const fileName = `${StringHelper.randomString(8)}_${file.originalname}`;
         await TanvirStorage.put(
-          appConfig().storageUrl.attachment + "/" + fileName,
+          appConfig().storageUrl.attachment + '/' + fileName,
           file.buffer,
         );
         savedFileNames.push(fileName);
@@ -108,44 +106,36 @@ export class MessageService {
         email: message.sender.email,
         avatar: message.sender.avatar
           ? TanvirStorage.url(
-            `${appConfig().storageUrl.avatar}/${message.sender.avatar}`,
-          )
+              `${appConfig().storageUrl.avatar}/${message.sender.avatar}`,
+            )
           : null,
       },
     };
 
-    // note: socket implementation for message sending
     const senderSocketId = this.messageGateway.clients.get(sender);
 
     if (senderSocketId) {
       this.messageGateway.server
         .to(conversationId)
         .except(senderSocketId)
-        .emit("message", {
+        .emit('message', {
           from: sender,
           data: formatted,
         });
     } else {
-      this.messageGateway.server.to(conversationId).emit("message", {
+      this.messageGateway.server.to(conversationId).emit('message', {
         from: sender,
         data: formatted,
       });
     }
 
-    /*
-     socket.on('message', (msg) => {
-      console.log('New message received:', msg);
-    });
-    */
-
     return {
-      message: "Message sent successfully",
+      message: 'Message sent successfully',
       success: true,
       data: formatted,
     };
   }
 
-  // *get all messages for a conversation
   async findAll(
     conversationId: string,
     userId: string,
@@ -170,7 +160,7 @@ export class MessageService {
     });
 
     if (!conversation) {
-      throw new NotFoundException("Conversation not found");
+      throw new NotFoundException('Conversation not found');
     }
 
     const isParticipant = conversation.participants.some(
@@ -178,7 +168,7 @@ export class MessageService {
     );
     if (!isParticipant) {
       throw new UnauthorizedException(
-        "You are not a participant of this conversation.",
+        'You are not a participant of this conversation.',
       );
     }
 
@@ -194,8 +184,8 @@ export class MessageService {
         email: receiverParticipant.user.email,
         avatar_url: receiverParticipant.user.avatar
           ? TanvirStorage.url(
-            `${appConfig().storageUrl.avatar}/${receiverParticipant.user.avatar}`,
-          )
+              `${appConfig().storageUrl.avatar}/${receiverParticipant.user.avatar}`,
+            )
           : null,
       };
     }
@@ -209,7 +199,7 @@ export class MessageService {
             select: { id: true, name: true, email: true, avatar: true },
           },
         },
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: 'asc' },
         skip,
         take,
       }),
@@ -217,7 +207,7 @@ export class MessageService {
 
     if (totalMessages === 0) {
       return {
-        message: "No messages found",
+        message: 'No messages found',
         success: true,
         data: paginateResponse([], page, perPage, totalMessages),
       };
@@ -238,8 +228,8 @@ export class MessageService {
         avater: msg.sender.avatar,
         avatar_url: msg.sender.avatar
           ? TanvirStorage.url(
-            `${appConfig().storageUrl.avatar}/${msg.sender.avatar}`,
-          )
+              `${appConfig().storageUrl.avatar}/${msg.sender.avatar}`,
+            )
           : null,
       },
 
@@ -254,13 +244,12 @@ export class MessageService {
     );
 
     return {
-      message: "Messages retrieved successfully",
+      message: 'Messages retrieved successfully',
       success: true,
       ...paginationResult,
     };
   }
 
-  // Delete a message
   async deleteMessage(userId: string, messageId: string) {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
@@ -270,17 +259,16 @@ export class MessageService {
     });
 
     if (!message) {
-      throw new NotFoundException("Message not found");
+      throw new NotFoundException('Message not found');
     }
 
     if (message.senderId !== userId) {
       throw new UnauthorizedException(
-        "You are not authorized to delete this message.",
+        'You are not authorized to delete this message.',
       );
     }
 
     await this.prisma.$transaction(async (tx) => {
-
       await tx.message.delete({
         where: { id: messageId },
       });
@@ -295,13 +283,11 @@ export class MessageService {
     });
 
     return {
-      message: "Message deleted successfully",
+      message: 'Message deleted successfully',
       success: true,
     };
   }
 
-
-  // unread message count
   async getUnreadMessage(userId: string, conversationId: string) {
     const participant = await this.prisma.participant.findFirst({
       where: { conversationId, userId },
@@ -309,7 +295,7 @@ export class MessageService {
 
     if (!participant) {
       throw new UnauthorizedException(
-        "You are not a participant of this conversation.",
+        'You are not a participant of this conversation.',
       );
     }
 
@@ -326,7 +312,7 @@ export class MessageService {
       this.prisma.message.count({ where: whereClause }),
       this.prisma.message.findMany({
         where: whereClause,
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: 'asc' },
         include: {
           sender: {
             select: { id: true, name: true, email: true, avatar: true },
@@ -345,7 +331,7 @@ export class MessageService {
     }));
 
     return {
-      message: "Unread message count retrieved successfully",
+      message: 'Unread message count retrieved successfully',
       success: true,
       data: {
         count: unreadCount,
@@ -354,7 +340,6 @@ export class MessageService {
     };
   }
 
-  // Mark messages as read
   async readMessages(userId: string, conversationId: string) {
     const participant = await this.prisma.participant.findFirst({
       where: { conversationId, userId },
@@ -362,7 +347,7 @@ export class MessageService {
 
     if (!participant) {
       throw new UnauthorizedException(
-        "You are not a participant of this conversation.",
+        'You are not a participant of this conversation.',
       );
     }
 
@@ -373,10 +358,10 @@ export class MessageService {
         where: {
           conversationId,
           senderId: { not: userId },
-          status: { not: "READ" },
+          status: { not: 'READ' },
           createdAt: { gt: lastReadAt },
         },
-        data: { status: "READ" },
+        data: { status: 'READ' },
       });
 
       await tx.participant.update({
@@ -386,10 +371,8 @@ export class MessageService {
     });
 
     return {
-      message: "Messages marked as read successfully",
+      message: 'Messages marked as read successfully',
       success: true,
     };
   }
-
-
 }

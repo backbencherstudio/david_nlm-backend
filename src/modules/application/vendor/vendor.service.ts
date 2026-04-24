@@ -9,7 +9,6 @@ import { TanvirStorage } from 'src/common/lib/Disk/TanvirStorage';
 export class VendorService {
   constructor(private prisma: PrismaService) {}
 
-  // create business,pakage and day
   async create(
     createVendorDto: CreateVendorDto,
     userId: string,
@@ -104,7 +103,7 @@ export class VendorService {
     };
   }
 
-  // find all business
+ 
   async findAll() {
     const businesses = await this.prisma.business.findMany({
       include: {

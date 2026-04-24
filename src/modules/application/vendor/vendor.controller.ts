@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { JwtModule } from '@nestjs/jwt';
@@ -8,13 +20,11 @@ import { VendorService } from './vendor.service';
 import { memoryStorage } from 'multer';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
-@UseGuards(JwtAuthGuard,RolesGuard) 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('vendor')
 export class VendorController {
- 
   constructor(private readonly vendorService: VendorService) {}
- 
-  // create business,pakage and day 
+
   @Post('create')
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -41,7 +51,7 @@ export class VendorController {
       package_image?: Express.Multer.File[];
     },
   ) {
-    const userId = req.user.userId; 
+    const userId = req.user.userId;
 
     const businessCoverPhoto = files?.business_cover_photo?.[0];
     const portfolioFile = files?.portfolio_files?.[0];
@@ -49,21 +59,15 @@ export class VendorController {
 
     return this.vendorService.create(
       createVendorDto,
-       userId,
-       businessCoverPhoto,
-       portfolioFile,
-       packageImage,
-      );
+      userId,
+      businessCoverPhoto,
+      portfolioFile,
+      packageImage,
+    );
   }
 
-  // find all business
   @Get()
   async findAll() {
     return this.vendorService.findAll();
   }
-
-  
-  
-
-
 }

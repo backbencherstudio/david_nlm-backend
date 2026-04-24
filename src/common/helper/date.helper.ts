@@ -13,7 +13,7 @@ export class DateHelper {
     return dayjs(value).add(30, unit);
   }
 
-  // format date
+ 
   static format(date: number | string | Date) {
     const d = new Date(date);
     return d.toISOString();

@@ -20,7 +20,7 @@ export class S3Adapter implements IStorage {
       },
     };
     if (this._config.connection.minio) {
-      // s3ForcePathStyle: true, // Required for MinIO
+
       awsConfig['s3ForcePathStyle'] = true;
     }
     this.s3 = new AWS.S3({

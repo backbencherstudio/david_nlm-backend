@@ -35,7 +35,7 @@ export class MessageController {
   ) { }
 
 
-  //*send message
+
   @Post('send-message')
   @UseInterceptors(
     FilesInterceptor('attachments', 10, {
@@ -56,7 +56,7 @@ export class MessageController {
   }
 
   
-  //*get all message for a conversation
+  
   @Get('all-message/:conversationId')
   async findAll(
     @Param('conversationId') conversationId: string,
@@ -68,7 +68,7 @@ export class MessageController {
   }
  
 
-  // delete message
+ 
   @Delete('delete-message/:messageId')
   async deleteMessage(
     @Param('messageId') messageId: string,
@@ -79,7 +79,7 @@ export class MessageController {
   }
   
 
-   // unread message count
+  
   @Get('unread-message/:conversationId')
   async getUnreadMessageCount(
     @Param('conversationId') conversationId: string,
@@ -89,7 +89,7 @@ export class MessageController {
     return this.messageService.getUnreadMessage(user, conversationId);
   }
 
-  // read messages
+ 
   @Get('read-message/:conversationId')
   async readMessages(
     @Param('conversationId') conversationId: string,

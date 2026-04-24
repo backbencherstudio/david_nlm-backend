@@ -41,7 +41,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  // *get user details
+
   @ApiOperation({
     summary: 'Get current user',
     description:
@@ -64,7 +64,7 @@ export class AuthController {
     }
   }
 
-  // *register user
+  
   @Post('register')
   @ApiOperation({
     summary: 'Register a new user',
@@ -144,7 +144,6 @@ export class AuthController {
   }
 
 
-  // *login user
   @ApiOperation({
     summary: 'Login user',
     description: 'Authenticates a user with email and password.',
@@ -182,7 +181,6 @@ export class AuthController {
         email: user_email,
       });
 
-      // store to secure cookies
       res.cookie('refresh_token', response.authorization.refresh_token, {
         httpOnly: true,
         secure: true,
@@ -215,8 +213,6 @@ export class AuthController {
   }  
 
   
-
-  // *update user
   @ApiOperation({
     summary: 'Update user profile',
     description:
@@ -252,7 +248,6 @@ export class AuthController {
     }
   }
 
-  // *forgot password
   @ApiOperation({
     summary: 'Forgot password',
     description:
@@ -288,7 +283,6 @@ export class AuthController {
     }
   }
 
-  // *verify email
   @ApiOperation({
     summary: 'Verify email',
     description:
@@ -321,7 +315,7 @@ export class AuthController {
     }
   }
 
-  // *resend verification email to verify the email
+
   @ApiOperation({
     summary: 'Resend verification email',
     description:
@@ -358,7 +352,7 @@ export class AuthController {
     }
   }
 
-  // *reset password if user forget the password
+
   @ApiOperation({
     summary: 'Reset password',
     description:
@@ -429,7 +423,7 @@ export class AuthController {
     }
   }
 
-  // *resend token
+
   @ApiOperation({
     summary: 'Resend reset password token',
     description:
@@ -450,6 +444,7 @@ export class AuthController {
       },
     },
   })
+
   @ApiResponse({ status: 200, description: 'Reset token resent to email.' })
   @Post('resend-token')
   async resendToken(@Body() data: { email: string }) {
@@ -467,7 +462,7 @@ export class AuthController {
     }
   }
 
-  // *verify token
+
   @ApiOperation({
     summary: 'Verify reset password token',
     description:
@@ -518,7 +513,7 @@ export class AuthController {
     }
   }
 
-  // change password if user want to change the password
+
   @ApiOperation({
     summary: 'Change password',
     description:
@@ -558,14 +553,12 @@ export class AuthController {
     @Body() data: { email: string; old_password: string; new_password: string },
   ) {
     try {
-      // const email = data.email;
+    
       const user_id = req.user.userId;
 
       const oldPassword = data.old_password;
       const newPassword = data.new_password;
-      // if (!email) {
-      //   throw new HttpException('Email not provided', HttpStatus.UNAUTHORIZED);
-      // }
+  
       if (!oldPassword) {
         throw new HttpException(
           'Old password not provided',
@@ -579,7 +572,6 @@ export class AuthController {
         );
       }
       return await this.authService.changePassword({
-        // email: email,
         user_id: user_id,
         oldPassword: oldPassword,
         newPassword: newPassword,
@@ -591,7 +583,7 @@ export class AuthController {
       };
     }
   }
-  //-----------------------------------------------(end)----------------------------------------------------------------------
+ 
 
   @ApiOperation({
     summary: 'Refresh access token',
@@ -677,11 +669,7 @@ export class AuthController {
     };
   }
 
-  // --------------change password---------
-
-  // --------------end change password---------
-
-  // -------change email address------
+  
   @ApiOperation({
     summary: 'Request email change',
     description:
@@ -781,9 +769,7 @@ export class AuthController {
       };
     }
   }
-  // -------end change email address------
-
-  // --------- 2FA ---------
+ 
   @ApiOperation({
     summary: 'Generate 2FA secret',
     description:
@@ -882,5 +868,5 @@ export class AuthController {
       };
     }
   }
-  // --------- end 2FA ---------
+
 }

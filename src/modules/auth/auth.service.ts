@@ -25,9 +25,8 @@ export class AuthService {
     private userRepository: UserRepository,
     private ucodeRepository: UcodeRepository,
     @InjectRedis() private readonly redis: Redis,
-  ) { }
+  ) {}
 
-  //
   async me(userId: string) {
     try {
       const user = await this.prisma.user.findFirst({
@@ -75,7 +74,7 @@ export class AuthService {
       };
     }
   }
-  // done
+
   async register({
     first_name,
     last_name,
@@ -153,15 +152,12 @@ export class AuthService {
         });
       }
 
-      // ----------------------------------------------------
-      // create otp code
       const token = await this.ucodeRepository.createToken({
         userId: userId,
         isOtp: true,
         time: 2,
       });
 
-      // send otp code to email
       await this.mailService.sendOtpCodeToEmail({
         email: email,
         name: name,
@@ -179,23 +175,21 @@ export class AuthService {
       };
     }
   }
-  // done
+
   async login({ email, userId }) {
     try {
       const user = await this.userRepository.getUserDetails(userId);
 
       const payload = { email: email, sub: userId, type: user?.type };
 
-
       const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
       const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-      // store refreshToken
       await this.redis.set(
         `refresh_token:${user.id}`,
         refreshToken,
         'EX',
-        60 * 60 * 24 * 7, // 7 days in seconds
+        60 * 60 * 24 * 7,
       );
 
       return {
@@ -216,15 +210,10 @@ export class AuthService {
     }
   }
 
-  // add license (multiple images)
-  async addLicense(
-    userId: string,
-    license: Express.Multer.File[],
-  ) {
+  async addLicense(userId: string, license: Express.Multer.File[]) {
     const data: any = {};
 
     if (license && license.length > 0) {
-      // delete old license images if exist
       const existingProfile = await this.prisma.vendorProfile.findUnique({
         where: { user_id: userId },
         select: { license_photo: true },
@@ -238,7 +227,6 @@ export class AuthService {
         }
       }
 
-      // upload new license images
       const fileNames: string[] = [];
       for (const file of license) {
         const fileName = `${StringHelper.randomString()}_${file.originalname}`;
@@ -248,7 +236,7 @@ export class AuthService {
         );
         fileNames.push(fileName);
       }
-      // VendorProfile.license_photo is a String[] in Prisma schema
+
       data.license_photo = fileNames;
     }
 
@@ -276,7 +264,7 @@ export class AuthService {
     });
 
     const user = updatedVendorProfile.user;
-    
+
     return {
       success: true,
       message: 'License added successfully',
@@ -285,25 +273,20 @@ export class AuthService {
         name: user.name,
         email: user.email,
         avatar: user.avatar
-          ? TanvirStorage.url(
-              appConfig().storageUrl.avatar + '/' + user.avatar,
-            )
+          ? TanvirStorage.url(appConfig().storageUrl.avatar + '/' + user.avatar)
           : null,
         address: user.address,
         type: user.type,
         license_photo: updatedVendorProfile.license_photo
           ? updatedVendorProfile.license_photo.map((photo) =>
-              TanvirStorage.url(
-                appConfig().storageUrl.license + '/' + photo,
-              ),
+              TanvirStorage.url(appConfig().storageUrl.license + '/' + photo),
             )
           : [],
       },
     };
-
   }
 
-  // update user 
+  // update user
   async updateUser(
     userId: string,
     updateUserDto: UpdateUserDto,
@@ -321,7 +304,6 @@ export class AuthService {
       if (updateUserDto.address) data.address = updateUserDto.address;
 
       if (image) {
-        // delete old image from storage
         const oldImage = await this.prisma.user.findFirst({
           where: { id: userId },
           select: { avatar: true },
@@ -332,7 +314,6 @@ export class AuthService {
           );
         }
 
-        // upload file
         const fileName = `${StringHelper.randomString()}_${image.originalname}`;
         await TanvirStorage.put(
           appConfig().storageUrl.avatar + '/' + fileName,
@@ -341,7 +322,7 @@ export class AuthService {
 
         data.avatar = fileName;
       }
-      
+
       const user = await this.userRepository.getUserDetails(userId);
       if (user) {
         await this.prisma.user.update({
@@ -407,20 +388,17 @@ export class AuthService {
     }
   }
 
-  // done
   async resendToken(email: string) {
     try {
       const user = await this.userRepository.getUserByEmail(email);
 
       if (user) {
-        // create otp code
         const token = await this.ucodeRepository.createToken({
           userId: user.id,
           isOtp: true,
           time: 2,
         });
 
-        // send otp code to email
         await this.mailService.sendOtpCodeToEmail({
           email: email,
           name: user.name,
@@ -445,7 +423,6 @@ export class AuthService {
     }
   }
 
-  // done
   async verifyToken({ email, token }) {
     try {
       const user = await this.userRepository.exist({
@@ -459,7 +436,6 @@ export class AuthService {
           token: token,
         });
 
-        // Check the actual success property, not just if object exists
         if (result && result.success) {
           return {
             success: true,
@@ -532,19 +508,17 @@ export class AuthService {
       };
     }
   }
-  // done
+
   async resendVerificationEmail(email: string) {
     try {
       const user = await this.userRepository.getUserByEmail(email);
 
       if (user) {
-        // create otp code
         const token = await this.ucodeRepository.createToken({
           userId: user.id,
           isOtp: true,
         });
 
-        // send otp code to email
         await this.mailService.sendOtpCodeToEmail({
           email: email,
           name: user.name,
@@ -588,7 +562,6 @@ export class AuthService {
             password: password,
           });
 
-          // delete otp code
           await this.ucodeRepository.deleteToken({
             email: email,
             token: token,
@@ -656,8 +629,6 @@ export class AuthService {
       };
     }
   }
-
-  // ---------------------------------(end)---------------------------------------
 
   async refreshToken(user_id: string, refreshToken: string) {
     try {
@@ -790,7 +761,6 @@ export class AuthService {
             new_email: new_email,
           });
 
-          // delete otp code
           await this.ucodeRepository.deleteToken({
             email: new_email,
             token: token,
@@ -850,33 +820,17 @@ export class AuthService {
             const isValid = await this.userRepository.verify2FA(user.id, token);
             if (!isValid) {
               throw new UnauthorizedException('Invalid token');
-              // return {
-              //   success: false,
-              //   message: 'Invalid token',
-              // };
             }
           } else {
             throw new UnauthorizedException('Token is required');
-            // return {
-            //   success: false,
-            //   message: 'Token is required',
-            // };
           }
         }
         return result;
       } else {
         throw new UnauthorizedException('Password not matched');
-        // return {
-        //   success: false,
-        //   message: 'Password not matched',
-        // };
       }
     } else {
       throw new UnauthorizedException('Email not found');
-      // return {
-      //   success: false,
-      //   message: 'Email not found',
-      // };
     }
   }
 
@@ -958,5 +912,4 @@ export class AuthService {
       };
     }
   }
-  // --------- end 2FA ---------
 }

@@ -36,11 +36,6 @@ import { RepositoryModule } from './common/repository/repository.module';
         password: appConfig().redis.password,
         port: +appConfig().redis.port,
       },
-      // redis: {
-      //   host: appConfig().redis.host,
-      //   password: appConfig().redis.password,
-      //   port: +appConfig().redis.port,
-      // },
     }),
     RedisModule.forRoot({
       type: 'single',
@@ -50,25 +45,7 @@ import { RepositoryModule } from './common/repository/repository.module';
         port: +appConfig().redis.port,
       },
     }),
-    // disabling throttling for dev
-    // ThrottlerModule.forRoot([
-    //   {
-    //     name: 'short',
-    //     ttl: 1000,
-    //     limit: 3,
-    //   },
-    //   {
-    //     name: 'medium',
-    //     ttl: 10000,
-    //     limit: 20,
-    //   },
-    //   {
-    //     name: 'long',
-    //     ttl: 60000,
-    //     limit: 100,
-    //   },
-    // ]),
-    // General modules
+    
     PrismaModule,
     RepositoryModule,
     AuthModule,
@@ -82,15 +59,6 @@ import { RepositoryModule } from './common/repository/repository.module';
   ],
   controllers: [AppController],
   providers: [
-    // disabling throttling for dev
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerGuard,
-    // },
-    // disbling throttling for dev {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerBehindProxyGuard,
-    // },
     AppService,
   ],
 })
