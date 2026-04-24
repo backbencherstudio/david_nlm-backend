@@ -9,7 +9,7 @@ import { Roles } from 'src/common/guard/role/roles.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
-@Controller('category')
+@Controller('admin/category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
