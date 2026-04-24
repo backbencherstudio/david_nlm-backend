@@ -262,6 +262,47 @@ model VendorSubscriptionPlan {
  * -------------------------------------------------------------
  */
 
+
+enum BusinessOperatedBy {
+  HOME_BASED
+  LOCATION_BASED
+  MOBILE_BASED
+  ONSITE_BASED
+}
+
+model Business {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  business_name        String? @db.VarChar(255)
+  business_description String? @db.VarChar(255)
+  business_note        String? @db.Text
+
+  // category link
+  category_id String?
+  category    ServiceCategory? @relation("BusinessToCategory", fields: [category_id], references: [id])
+
+  // sub category link
+  sub_category_id String?
+  sub_category    ServiceSubCategory? @relation("BusinessToSubCategory", fields: [sub_category_id], references: [id])
+
+  OPERATED_BY BusinessOperatedBy?
+
+  Specialties  String? @db.VarChar(255)
+  ServiceArea  String? @db.VarChar(255)
+  profile_photo String?
+
+  @@map("businesses")
+}
+
+
+/**
+ * ------------------------------------------------------------
+ * --- Business part start ---
+ * -------------------------------------------------------------
+ */
+ 
 /**
  * ------------------------------------------------------------
  * --- service part start ---
@@ -300,6 +341,9 @@ model ServiceCategory {
   // Many-to-Many relationship with sub-categories
   sub_categories ServiceSubCategory[] @relation("ServiceCategoryToSubCategory")
 
+  // Relationship with business
+  businesses Business[] @relation("BusinessToCategory")
+
   @@map("service_categories")
 }
 
@@ -316,6 +360,9 @@ model ServiceSubCategory {
 
   // Many-to-Many join table link
   services ServiceToSubCategory[] @relation("Subcatagoryto-ServiceToSubCategory")
+
+  // Relationship with business
+  businesses Business[] @relation("BusinessToSubCategory")
 
   @@unique([name, category_id])
   @@map("service_sub_categories")
