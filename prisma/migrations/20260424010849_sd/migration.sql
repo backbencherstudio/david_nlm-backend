@@ -2,7 +2,25 @@
 CREATE TYPE "UserType" AS ENUM ('ADMIN', 'CUSTOMER', 'VENDOR', 'EVENT_PLANNER', 'PROVIDER', 'EDITOR', 'CLIENT');
 
 -- CreateEnum
+CREATE TYPE "ADMIN_APPROVE_STATUS" AS ENUM ('PENDING', 'APPROVED', 'NOT_APPLICABLE', 'SUSPENDED');
+
+-- CreateEnum
 CREATE TYPE "MessageStatus" AS ENUM ('SENT', 'DELIVERED', 'READ', 'PENDING');
+
+-- CreateEnum
+CREATE TYPE "WorkingType" AS ENUM ('DAY', 'HOUR');
+
+-- CreateEnum
+CREATE TYPE "OperatedBy" AS ENUM ('REMOTE', 'ON_SITE', 'HYBRID');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionStatus" AS ENUM ('PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionBillingCycle" AS ENUM ('MONTHLY', 'YEARLY');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionPaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUNDED');
 
 -- CreateTable
 CREATE TABLE "accounts" (
@@ -33,14 +51,16 @@ CREATE TABLE "users" (
     "status" SMALLINT DEFAULT 1,
     "first_name" VARCHAR(255),
     "last_name" VARCHAR(255),
-    "avatar" TEXT,
-    "about_me" TEXT,
-    "email" TEXT,
-    "address" TEXT,
-    "password" VARCHAR(255),
-    "type" "UserType" DEFAULT 'CUSTOMER',
     "name" VARCHAR(255),
+    "avatar" TEXT,
     "location" VARCHAR(255),
+    "phone_number" TEXT,
+    "email" TEXT,
+    "password" VARCHAR(255),
+    "birthday" TEXT,
+    "about_me" TEXT,
+    "address" TEXT,
+    "type" "UserType" DEFAULT 'CUSTOMER',
     "language" VARCHAR(100),
     "billing_id" TEXT,
     "stripe_connect_id" TEXT,
@@ -49,7 +69,6 @@ CREATE TABLE "users" (
     "bio" TEXT,
     "domain" TEXT,
     "username" TEXT,
-    "phone_number" TEXT,
     "country" TEXT,
     "state" TEXT,
     "city" TEXT,
@@ -65,6 +84,24 @@ CREATE TABLE "users" (
 );
 
 -- CreateTable
+CREATE TABLE "vendor_profiles" (
+    "id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deleted_at" TIMESTAMP(3),
+    "user_id" TEXT NOT NULL,
+    "subscription_active" BOOLEAN NOT NULL DEFAULT false,
+    "license_photo" TEXT[],
+    "license_status" "ADMIN_APPROVE_STATUS" NOT NULL DEFAULT 'PENDING',
+    "approved_at" TIMESTAMP(3),
+    "business_name" VARCHAR(255),
+    "about_me" TEXT,
+    "address" TEXT,
+
+    CONSTRAINT "vendor_profiles_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ucodes" (
     "id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -77,6 +114,75 @@ CREATE TABLE "ucodes" (
     "verified_at" TIMESTAMP(3),
 
     CONSTRAINT "ucodes_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "subscriptions" (
+    "id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "name" TEXT NOT NULL,
+    "billing_cycle" "SubscriptionBillingCycle",
+    "status" "SubscriptionStatus",
+
+    CONSTRAINT "subscriptions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "vendor_subscriptions" (
+    "id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "vendor_id" TEXT NOT NULL,
+    "subscription_id" TEXT NOT NULL,
+    "start_date" TIMESTAMP(3),
+    "end_date" TIMESTAMP(3),
+    "payment_status" "SubscriptionPaymentStatus",
+
+    CONSTRAINT "vendor_subscriptions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "services" (
+    "id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "operated_by" "OperatedBy" NOT NULL,
+    "working_type" "WorkingType" NOT NULL,
+    "commission" DECIMAL(5,2) NOT NULL DEFAULT 0.0,
+    "category_id" TEXT NOT NULL,
+
+    CONSTRAINT "services_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "service_categories" (
+    "id" TEXT NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "service_categories_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "service_sub_categories" (
+    "id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "category_id" TEXT NOT NULL,
+
+    CONSTRAINT "service_sub_categories_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "service_to_sub_categories" (
+    "service_id" TEXT NOT NULL,
+    "sub_category_id" TEXT NOT NULL,
+
+    CONSTRAINT "service_to_sub_categories_pkey" PRIMARY KEY ("service_id","sub_category_id")
 );
 
 -- CreateTable
@@ -278,6 +384,15 @@ CREATE UNIQUE INDEX "users_domain_key" ON "users"("domain");
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "vendor_profiles_user_id_key" ON "vendor_profiles"("user_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "service_categories_name_key" ON "service_categories"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "service_sub_categories_name_category_id_key" ON "service_sub_categories"("name", "category_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Participant_conversationId_userId_key" ON "Participant"("conversationId", "userId");
 
 -- CreateIndex
@@ -287,7 +402,28 @@ CREATE INDEX "_PermissionToRole_B_index" ON "_PermissionToRole"("B");
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "vendor_profiles" ADD CONSTRAINT "vendor_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ucodes" ADD CONSTRAINT "ucodes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "vendor_subscriptions" ADD CONSTRAINT "vendor_subscriptions_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "vendor_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "vendor_subscriptions" ADD CONSTRAINT "vendor_subscriptions_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "subscriptions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "services" ADD CONSTRAINT "services_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "service_categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "service_sub_categories" ADD CONSTRAINT "service_sub_categories_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "service_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "service_to_sub_categories" ADD CONSTRAINT "service_to_sub_categories_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "services"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "service_to_sub_categories" ADD CONSTRAINT "service_to_sub_categories_sub_category_id_fkey" FOREIGN KEY ("sub_category_id") REFERENCES "service_sub_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Participant" ADD CONSTRAINT "Participant_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
