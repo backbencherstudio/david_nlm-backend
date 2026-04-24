@@ -9,17 +9,17 @@ import { Roles } from 'src/common/guard/role/roles.decorator';
 
 @UseGuards(JwtAuthGuard,RolesGuard)
 @Roles(Role.ADMIN)
-@Controller('listing')
+@Controller('admin/listing')
 export class ListingController {
   constructor(private readonly listingService: ListingService) {}
 
   @Post()
-  create(@Body() createListingDto: CreateListingDto) {
+  async create(@Body() createListingDto: CreateListingDto) {
     return this.listingService.create(createListingDto);
   }
 
   @Get()
-  findAll() {
+  async findAll() {
     return this.listingService.findAll();
   }
 
@@ -29,7 +29,8 @@ export class ListingController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateListingDto: UpdateListingDto) {
+  async update(
+    @Param('id') id: string, @Body() updateListingDto: UpdateListingDto) {
     return this.listingService.update(id, updateListingDto);
   }
 

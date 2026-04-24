@@ -1,17 +1,25 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ListingService {
-
-  constructor(
-    private prisma: PrismaService
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async create(createListingDto: CreateListingDto) {
-    const { name, category_id, sub_category_ids, operated_by, working_type, commission } = createListingDto;
+    const {
+      name,
+      category_id,
+      sub_category_ids,
+      operated_by,
+      working_type,
+      commission,
+    } = createListingDto;
 
     const category = await this.prisma.serviceCategory.findUnique({
       where: { id: category_id },
@@ -30,9 +38,13 @@ export class ListingService {
         throw new NotFoundException('One or more subcategories not found');
       }
 
-      const invalidSubcategory = subcategories.find((sub) => sub.category_id !== category_id);
+      const invalidSubcategory = subcategories.find(
+        (sub) => sub.category_id !== category_id,
+      );
       if (invalidSubcategory) {
-        throw new ConflictException('All subcategories must belong to the selected category');
+        throw new ConflictException(
+          'All subcategories must belong to the selected category',
+        );
       }
     }
 
@@ -110,80 +122,33 @@ export class ListingService {
   }
 
   async update(id: string, updateListingDto: UpdateListingDto) {
-    const existingService = await this.prisma.service.findUnique({
+  
+    const { name, operated_by, working_type, commission } = updateListingDto;
+
+    const service = await this.prisma.service.findUnique({
       where: { id },
-      include: {
-        sub_categories: true,
-      },
     });
 
-    if (!existingService) {
+    if (!service) {
       throw new NotFoundException(`Service with ID ${id} not found`);
     }
 
-    const { name, category_id, sub_category_ids, operated_by, working_type, commission } =
-      updateListingDto;
-
-    const targetCategoryId = category_id ?? existingService.category_id;
-
-    const category = await this.prisma.serviceCategory.findUnique({
-      where: { id: targetCategoryId },
-    });
-
-    if (!category) {
-      throw new NotFoundException(`Category with ID ${targetCategoryId} not found`);
-    }
-
-    if (sub_category_ids && sub_category_ids.length > 0) {
-      const subcategories = await this.prisma.serviceSubCategory.findMany({
-        where: { id: { in: sub_category_ids } },
-      });
-
-      if (subcategories.length !== sub_category_ids.length) {
-        throw new NotFoundException('One or more subcategories not found');
-      }
-
-      const invalidSubcategory = subcategories.find((sub) => sub.category_id !== targetCategoryId);
-      if (invalidSubcategory) {
-        throw new ConflictException('All subcategories must belong to the selected category');
-      }
-    }
-
-    const updatedService = await this.prisma.$transaction(async (tx) => {
-      if (sub_category_ids) {
-        await tx.serviceToSubCategory.deleteMany({
-          where: { service_id: id },
-        });
-      }
-
-      return tx.service.update({
-        where: { id },
-        data: {
-          name,
-          category_id,
-          operated_by,
-          working_type,
-          commission,
-          sub_categories:
-            sub_category_ids && sub_category_ids.length > 0
-              ? {
-                  create: sub_category_ids.map((sub_category_id) => ({
-                    sub_category: { connect: { id: sub_category_id } },
-                  })),
-                }
-              : sub_category_ids
-              ? {
-                  deleteMany: {},
-                }
-              : undefined,
-        },
-        include: {
-          category: true,
-          sub_categories: {
-            include: { sub_category: true },
+    const updatedService = await this.prisma.service.update({
+      where: { id },
+      data: {
+        name,
+        operated_by,
+        working_type,
+        commission,
+      },
+      include: {
+        category: true,
+        sub_categories: {
+          include: {
+            sub_category: true,
           },
         },
-      });
+      },
     });
 
     return {

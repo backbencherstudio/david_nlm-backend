@@ -272,13 +272,14 @@ model Service {
   id         String   @id @default(cuid())
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  status     Int?     @default(1) @db.SmallInt
 
   name         String      @db.VarChar(255)
   operated_by  OperatedBy
   working_type WorkingType
   commission   Decimal     @default(0.0) @db.Decimal(5, 2)
 
-  // Relationships  ক্যাটেগরি সম্পর্ক
+  // Relationships  
   category_id String
   category    ServiceCategory @relation("ServiceCategoryRelation", fields: [category_id], references: [id])
 
