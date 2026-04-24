@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -122,7 +123,6 @@ export class ListingService {
   }
 
   async update(id: string, updateListingDto: UpdateListingDto) {
-  
     const { name, operated_by, working_type, commission } = updateListingDto;
 
     const service = await this.prisma.service.findUnique({
@@ -174,6 +174,94 @@ export class ListingService {
     return {
       success: true,
       message: 'Service deleted successfully',
+    };
+  }
+
+  /*-----------------------------------------
+          dashborad service management
+  -----------------------------------------*/
+
+  // all service dashboard
+  async getAllServiceDashboard() {
+    const services = await this.prisma.service.findMany({
+      select: {
+        id: true,
+        name: true,
+        commission: true,
+        status: true,
+        sub_categories: {
+          select: {
+            sub_category_id: true,
+          },
+        },
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    const formattedServices = services.map((service) => {
+      return {
+        id: service.id,
+        service_name: service.name,
+        commission: `${service.commission}%`,
+        services: service.sub_categories.length,
+        status: service.status === 1 ? 'Active' : 'Inactive',
+      };
+    });
+
+    return {
+      success: true,
+      message: 'All services retrieved successfully',
+      data: formattedServices,
+    };
+  }
+
+  // action dashboard service status update
+  async updateServiceStatus(id: string, status: number) {
+    const service = await this.prisma.service.findUnique({
+      where: { id },
+    });
+
+    if (!service) {
+      throw new NotFoundException(`Service with ID ${id} not found`);
+    }
+
+    if (status !== 0 && status !== 1) {
+      throw new BadRequestException('Status must be 0 or 1');
+    }
+
+    const updatedService = await this.prisma.service.update({
+      where: { id },
+      data: {
+        status,
+      },
+      select: {
+        id: true,
+        name: true,
+        commission: true,
+        status: true,
+        operated_by: true,
+        working_type: true,
+        updated_at: true,
+      },
+    });
+
+    return {
+      success: true,
+      message:
+        status === 1
+          ? 'Service activated successfully'
+          : 'Service deactivated successfully',
+      data: {
+        id: updatedService.id,
+        service_name: updatedService.name,
+        commission: `${updatedService.commission}%`,
+        status: updatedService.status === 1 ? 'Active' : 'Inactive',
+        operated_by: updatedService.operated_by,
+        working_type: updatedService.working_type,
+        updated_at: updatedService.updated_at,
+      },
     };
   }
 }

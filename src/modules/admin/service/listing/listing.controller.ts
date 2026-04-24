@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { ListingService } from './listing.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
@@ -7,7 +16,7 @@ import { RolesGuard } from 'src/common/guard/role/roles.guard';
 import { Role } from 'src/common/guard/role/role.enum';
 import { Roles } from 'src/common/guard/role/roles.decorator';
 
-@UseGuards(JwtAuthGuard,RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @Controller('admin/listing')
 export class ListingController {
@@ -30,12 +39,33 @@ export class ListingController {
 
   @Patch(':id')
   async update(
-    @Param('id') id: string, @Body() updateListingDto: UpdateListingDto) {
+    @Param('id') id: string,
+    @Body() updateListingDto: UpdateListingDto,
+  ) {
     return this.listingService.update(id, updateListingDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.listingService.remove(id);
+  }
+
+  /*-----------------------------------------
+          dashborad service management
+  -----------------------------------------*/
+
+  // all service dashboard
+  @Get('dashboard/all-service')
+  async getAllServiceDashboard() {
+    return this.listingService.getAllServiceDashboard();
+  }
+
+  // action dashboard service status update
+  @Patch('dashboard/status/:id')
+  async updateServiceStatus(
+    @Param('id') id: string,
+    @Body('status') status: number,
+  ) {
+    return this.listingService.updateServiceStatus(id, status);
   }
 }
