@@ -275,26 +275,76 @@ model Business {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
+  // Create Business Screen Data
   business_name        String? @db.VarChar(255)
+  business_cover_photo String ? @db.VarChar(255)
   business_description String? @db.VarChar(255)
   business_note        String? @db.Text
 
-  // category link
+  // Category & Sub-category link
   category_id String?
   category    ServiceCategory? @relation("BusinessToCategory", fields: [category_id], references: [id])
-
-  // sub category link
   sub_category_id String?
   sub_category    ServiceSubCategory? @relation("BusinessToSubCategory", fields: [sub_category_id], references: [id])
-
+  
+  // Operated Service
   OPERATED_BY BusinessOperatedBy?
 
-  Specialties  String? @db.VarChar(255)
-  ServiceArea  String? @db.VarChar(255)
-  profile_photo String?
+  specialties  String? @db.VarChar(255)
+  service_area  String? @db.VarChar(255)
+
+  portfolio_files String[] @db.Text
+
+  // Relationships
+  packages Package[] @relation("BusinessToPackage")
+  days     Day[]     @relation("BusinessToDay")
 
   @@map("businesses")
 }
+
+
+model Package {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  package_name        String? @db.VarChar(255)
+  package_description String? @db.Text
+  package_image       String? @db.VarChar(255)
+
+  side_choices        String?  @db.Text 
+  notes              String? @db.Text
+  service_price         Decimal? @default(0.0) @db.Decimal(10, 2)
+
+  // service link
+  business_id String
+  business    Business @relation("BusinessToPackage", fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@map("packages")
+}
+
+
+model Day{
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+ day_name String? @db.VarChar(50)
+
+  // working time
+  start_time String? @db.VarChar(10)
+  end_time   String? @db.VarChar(10)
+
+  intra_service_interval_hours   Int? @default(0)
+  intra_service_interval_minutes Int? @default(0)
+
+  // business link
+  business_id String
+  business    Business @relation("BusinessToDay", fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@map("days")
+} 
+
 
 
 /**
