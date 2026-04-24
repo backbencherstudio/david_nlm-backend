@@ -43,7 +43,7 @@ export class AuthController {
 
   // *get user details
   @ApiOperation({
-    summary: 'Get current user hi',
+    summary: 'Get current user',
     description:
       "Returns the authenticated user's profile information. Requires a valid Bearer token.",
   })
