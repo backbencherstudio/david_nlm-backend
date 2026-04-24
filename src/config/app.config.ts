@@ -83,6 +83,7 @@ export default () => ({
     // storage directory
     package: '/package',
     license: '/license',
+    business: '/business',
     destination: '/destination',
     blog: '/blog',
     avatar: '/avatar',

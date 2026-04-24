@@ -159,9 +159,16 @@ model User {
   participants Participant[] @relation("participantUser")
   sentMessages Message[]     @relation("messageSender")
 
+  // --- Business ---
+  businesses Business[] @relation("BusinessToUser")
+
   // --- Notifications ---
   receivedNotifications Notification[] @relation("notificationReceiver")
   sentNotifications     Notification[] @relation("notificationSender")
+
+  
+  bookings              Booking[] @relation("BookingToUser")
+   
 
   user_payment_methods UserPaymentMethod[]
   ucodes               Ucode[]
@@ -262,7 +269,6 @@ model VendorSubscriptionPlan {
  * -------------------------------------------------------------
  */
 
-
 enum BusinessOperatedBy {
   HOME_BASED
   LOCATION_BASED
@@ -277,21 +283,24 @@ model Business {
 
   // Create Business Screen Data
   business_name        String? @db.VarChar(255)
-  business_cover_photo String ? @db.VarChar(255)
+  business_cover_photo String? @db.VarChar(255)
   business_description String? @db.VarChar(255)
   business_note        String? @db.Text
 
   // Category & Sub-category link
-  category_id String?
-  category    ServiceCategory? @relation("BusinessToCategory", fields: [category_id], references: [id])
+  category_id     String?
+  category        ServiceCategory?    @relation("BusinessToCategory", fields: [category_id], references: [id])
   sub_category_id String?
   sub_category    ServiceSubCategory? @relation("BusinessToSubCategory", fields: [sub_category_id], references: [id])
-  
+  user_id         String
+  owner            User @relation("BusinessToUser",fields: [user_id], references: [id], onDelete: Cascade)  
+
+ 
   // Operated Service
   OPERATED_BY BusinessOperatedBy?
 
   specialties  String? @db.VarChar(255)
-  service_area  String? @db.VarChar(255)
+  service_area String? @db.VarChar(255)
 
   portfolio_files String[] @db.Text
 
@@ -299,9 +308,11 @@ model Business {
   packages Package[] @relation("BusinessToPackage")
   days     Day[]     @relation("BusinessToDay")
 
+  // bookings
+  bookings Booking[] @relation("BookingToBusiness")
+
   @@map("businesses")
 }
-
 
 model Package {
   id         String   @id @default(cuid())
@@ -312,24 +323,26 @@ model Package {
   package_description String? @db.Text
   package_image       String? @db.VarChar(255)
 
-  side_choices        String?  @db.Text 
-  notes              String? @db.Text
-  service_price         Decimal? @default(0.0) @db.Decimal(10, 2)
+  side_choices  String?  @db.Text
+  notes         String?  @db.Text
+  service_price Decimal? @default(0.0) @db.Decimal(10, 2)
 
   // service link
   business_id String
   business    Business @relation("BusinessToPackage", fields: [business_id], references: [id], onDelete: Cascade)
 
+    // bookings
+  bookings Booking[] @relation("BookingToService")
+
   @@map("packages")
 }
 
-
-model Day{
+model Day {
   id         String   @id @default(cuid())
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
- day_name String? @db.VarChar(50)
+  day_name String? @db.VarChar(50)
 
   // working time
   start_time String? @db.VarChar(10)
@@ -343,16 +356,72 @@ model Day{
   business    Business @relation("BusinessToDay", fields: [business_id], references: [id], onDelete: Cascade)
 
   @@map("days")
-} 
-
-
+}
 
 /**
  * ------------------------------------------------------------
- * --- Business part start ---
+ * --- Business part End ---
  * -------------------------------------------------------------
  */
+/**
+ * ------------------------------------------------------------
+ * --- Booking part start ---
+ * -------------------------------------------------------------
+ */
+
  
+ enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  RESCHEDULED
+  }
+
+  enum PaymentStatus {
+    PENDING
+    PAID
+    FAILED
+    REFUNDED
+  }
+
+
+ model Booking {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  // booking details
+
+  booking_date DateTime?
+  booking_start_time String? @db.VarChar(10)
+  booking_end_time   String? @db.VarChar(10)
+  booking_duration String? @db.Text
+
+  status       BookingStatus?
+  location     String? @db.VarChar(255)
+  total_price  Decimal? @default(0.0) @db.Decimal(10, 2)
+
+  payment_status PaymentStatus?
+  
+  // relationships
+  user_id     String
+  user        User     @relation("BookingToUser", fields: [user_id], references: [id], onDelete: Cascade)
+
+  vendor_id String
+  vendor    Business @relation("BookingToBusiness", fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  service_id String
+  service    Package  @relation("BookingToService", fields: [service_id], references: [id], onDelete: Cascade)
+
+ 
+ }
+/**
+ * ------------------------------------------------------------
+ * --- Booking part End ---
+ * -------------------------------------------------------------
+ */
 /**
  * ------------------------------------------------------------
  * --- service part start ---
@@ -376,6 +445,8 @@ model Service {
 
   // Many-to-Many relationship with serviceToSubCategory
   sub_categories ServiceToSubCategory[] @relation("ServiceWithManyToMany")
+
+  // Relationship with business
 
   @@map("services")
 }
